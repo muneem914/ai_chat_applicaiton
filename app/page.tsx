@@ -1,101 +1,129 @@
-import Image from "next/image";
+"use client";
+import React, { useEffect, useRef } from "react";
+import { useState } from "react";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import MessageBubble from "@/components/MessageBubble";
+import Link from "next/link";
 
-export default function Home() {
+const apiKey = process.env.NEXT_PUBLIC_LAMBDA_API_KEY as string;
+const apiModel = process.env.NEXT_PUBLIC_LAMBDA_MODEL as string;
+const genAI = new GoogleGenerativeAI(apiKey);
+
+const model = genAI.getGenerativeModel({
+  model: apiModel,
+});
+
+const generationConfig = {
+  temperature: 1,
+  topP: 0.95,
+  topK: 40,
+  maxOutputTokens: 8192,
+  responseMimeType: "text/plain",
+};
+
+type Message = {
+  sender: "user" | "ai";
+  text: string;
+};
+
+const Page = () => {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const run = async (userMessage: string, messages: Message[]) => {
+    const chatSession = model.startChat({
+      generationConfig,
+      history: [],
+    });
+
+    console.log(messages);
+    const result = await chatSession.sendMessage(userMessage);
+    return result.response.text();
+  };
+
+  
+  // Scroll function to track the bottom of the messages container
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const scrollToBottom = () => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
+  // message sending function from user
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!input.trim()) return;
+
+    const userMessage: Message = { sender: "user", text: input };
+    setMessages((prev) => [...prev, userMessage]);
+
+    setIsLoading(true);
+
+    try {
+      const aiResponseText = await run(input, messages);
+
+      const aiResponse: Message = { sender: "ai", text: aiResponseText };
+      setMessages((prev) => [...prev, aiResponse]);
+    } catch (error) {
+      console.error("Error generating response:", error);
+    } finally {
+      setIsLoading(false);
+      setInput("");
+    }
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+    <div className="flex flex-col h-screen justify-center items-center">
+      <div className="">
+      <h1 className="text-center text-gray-300 mt-3 text-lg">Welcome! <span className="text-white"><code>Commander Lambda-2.0</code></span> is here to help you.</h1>
+      <h1 className="text-center text-gray-300 mb-3 mt-1 text-sm">(Developed By: <span className="text-blue-500 underline italic"> <Link href="mailto:muneem914@gmail.com">muneem914@gmail.com</Link></span>)</h1>
+      </div>
+      <div className="w-full lg:w-5/6 h-[95vh] flex flex-col overflow-hidden bg-gray-900 rounded-lg shadow-lg">
+        {/* Messages Container */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {messages.map((message, index) => (
+            <MessageBubble
+              key={index}
+              sender={message.sender}
+              text={message.text}
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+          ))}
+          {isLoading && (
+            <div className="text-md italic text-white">Commander Lambda is typing...</div>
+          )}
+          {/* Scroll to this position */}
+          <div ref={messagesEndRef} />
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+
+        {/* Input Form */}
+        <form
+          onSubmit={handleSendMessage}
+          className="flex p-4 bg-gray-700 border-t border-gray-500"
         >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Type a message..."
+            className="flex-1 px-2 py-1 rounded-lg bg-gray-950 text-white focus:outline-none"
           />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+          <button
+            type="submit"
+            className="ml-2 bg-gray-800 text-white px-3 py-1 rounded-lg disabled:bg-gray-400"
+            disabled={!input.trim() || isLoading}
+          >
+            Send
+          </button>
+        </form>
+      </div>
     </div>
   );
-}
+};
+export default Page;
