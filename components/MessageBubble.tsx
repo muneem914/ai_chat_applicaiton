@@ -150,7 +150,7 @@ const MessageBubble = ({
 }) => (
   <div className="flex">
     <div
-      className={`p-2 rounded-lg m-2 mb-5  max-w-[90%] lg:max-w-[70%] ${
+      className={`p-3 rounded-lg m-2 mb-5  max-w-[90%] lg:max-w-[70%] ${
         sender === "user"
           ? "bg-gray-700 text-white  ml-auto"
           : "bg-gray-800 text-white self-start"

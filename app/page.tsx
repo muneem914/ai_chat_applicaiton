@@ -80,12 +80,12 @@ const Page = () => {
   }, [messages]);
 
   return (
-    <div className="flex flex-col h-screen justify-center items-center">
+    <div className="flex flex-col justify-center items-center h-[100vh] ">
       <div className="">
       <h1 className="text-center text-gray-300 mt-3 text-lg">Welcome! <span className="text-white"><code>Commander Lambda-2.0</code></span> is here to help you.</h1>
       <h1 className="text-center text-gray-300 mb-3 mt-1 text-sm">(Developed By: <span className="text-blue-500 underline italic"> <Link href="mailto:muneem914@gmail.com">muneem914@gmail.com</Link></span>)</h1>
       </div>
-      <div className="w-full lg:w-5/6 h-[95vh] flex flex-col overflow-hidden bg-gray-900 rounded-lg shadow-lg">
+      <div className="w-full lg:w-5/6 h-[100vh] flex flex-col overflow-hidden bg-gray-900 rounded-lg shadow-lg">
         {/* Messages Container */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {messages.map((message, index) => (
